@@ -5,6 +5,8 @@ FilePath: \TripSync\backend\app\main.py
 '''
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from app.database import engine
 
 
 # Create the FastAPI application
@@ -28,3 +30,13 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/health/db")
+def database_health_check():
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
+
+    return {
+        "status": "ok",
+        "database": "connected",
+    }
