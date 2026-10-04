@@ -7,7 +7,7 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 # Load environment variables from .env
@@ -18,6 +18,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not configured")
+
+
+# Base class for all SQLAlchemy ORM models
+class Base(DeclarativeBase):
+    pass
 
 
 # Create the SQLAlchemy database engine
