@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.api.auth import router as auth_router
 from app.api.dependencies import get_current_user
+from app.api.trips import router as trips_router
 from app.core.security import hash_password
 from app.database import engine, get_db
 from app.models.user import User
@@ -35,6 +36,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(trips_router)
 
 
 @app.get("/users/me", response_model=UserResponse, tags=["users"])

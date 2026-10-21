@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 export const SESSION_COOKIE = "tripsync_session";
 
@@ -17,7 +18,7 @@ export type CurrentUser = {
   created_at: string;
 };
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
@@ -30,4 +31,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (response.status === 401) return null;
   if (!response.ok) throw new Error("Unable to load account");
   return response.json() as Promise<CurrentUser>;
-}
+});

@@ -31,6 +31,7 @@ export default async function AccountPage() {
         <p className="mb-2 text-sm font-medium text-teal-700 dark:text-teal-400">我的帳號</p>
         <h1 className="text-3xl font-bold tracking-tight">你好，{user.username}</h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">歡迎回到 TripSync。</p>
+        <Link href="/trips" className="mt-6 inline-block rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800">前往我的旅程 →</Link>
         <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="account-details">
           <h2 id="account-details" className="mb-6 text-lg font-semibold">帳號資料</h2>
           <dl className="space-y-5">

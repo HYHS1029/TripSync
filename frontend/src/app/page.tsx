@@ -46,6 +46,9 @@ export default function Home() {
           <span className="font-semibold">{backendStatus}</span>
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
+          <Link href="/trips" className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800">
+            我的旅程
+          </Link>
           <Link href="/login" className="rounded-xl border border-zinc-300 px-5 py-3 font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900">
             登入
           </Link>
