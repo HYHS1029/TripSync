@@ -6,10 +6,11 @@ import LoginForm from "./login-form";
 
 export const metadata: Metadata = { title: "登入 | TripSync" };
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ registered?: string }> }) {
   // Keep the form available if the API is temporarily offline.
   const user = await getCurrentUser().catch(() => null);
   if (user) redirect("/account");
+  const { registered } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-12 dark:bg-zinc-950">
@@ -22,7 +23,9 @@ export default async function LoginPage() {
           <p className="mb-8 mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             使用已註冊的電子郵件與密碼登入 TripSync。
           </p>
+          {registered === "1" && <p role="status" className="mb-6 rounded-xl bg-teal-50 p-3 text-sm text-teal-800 dark:bg-teal-950 dark:text-teal-300">帳號建立成功，請使用新帳號登入。</p>}
           <LoginForm />
+          <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">還沒有帳號？ <Link href="/register" className="font-medium text-teal-700 underline-offset-4 hover:underline dark:text-teal-400">註冊</Link></p>
         </section>
         <p className="mt-6 text-center text-sm text-zinc-500">
           讓每一趟旅行，都從一起出發開始。

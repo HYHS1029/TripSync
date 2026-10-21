@@ -27,9 +27,11 @@ class PageForms(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == "form":
-            self.current = {"attrs": attrs, "fields": set(), "hidden": [], "text": ""}
+            self.current = {"attrs": attrs, "fields": set(), "hidden": [], "values": {}, "text": ""}
         elif tag in ("input", "textarea") and self.current is not None and attrs.get("name"):
             self.current["fields"].add(attrs["name"])
+            if tag == "input":
+                self.current["values"][attrs["name"]] = attrs.get("value", "")
             if attrs.get("type") == "hidden":
                 self.current["hidden"].append((attrs["name"], attrs.get("value", "")))
         elif tag == "meta" and attrs.get("http-equiv", "").lower() == "refresh":
@@ -95,10 +97,64 @@ def sign_in(client, email):
     assert "我的帳號" in get_page(client, response.headers["location"]).text
 
 
+def check_registration():
+    values = {
+        "email": "new_user@example.com",
+        "username": "new_user",
+        "password": PASSWORD,
+        "confirm_password": PASSWORD,
+    }
+    invalid_cases = [
+        ({"email": ""}, "請輸入有效的電子郵件"),
+        ({"email": "invalid-email"}, "請輸入有效的電子郵件"),
+        ({"username": "ab"}, "請使用 3–50 個英文字母、數字或底線"),
+        ({"username": "bad/name"}, "請使用 3–50 個英文字母、數字或底線"),
+        ({"username": "x" * 51}, "請使用 3–50 個英文字母、數字或底線"),
+        ({"password": "short", "confirm_password": "short"}, "密碼需要 8–128 個字元"),
+        ({"password": "x" * 129, "confirm_password": "x" * 129}, "密碼需要 8–128 個字元"),
+        ({"confirm_password": "different-password"}, "兩次輸入的密碼不一致"),
+        ({"confirm_password": ""}, "兩次輸入的密碼不一致"),
+    ]
+    with httpx.Client(timeout=20) as client:
+        assert 'href="/register"' in get_page(client, "/").text
+        assert 'href="/register"' in get_page(client, "/login").text
+        page = get_page(client, "/register")
+        assert page.status_code == 200 and 'href="/login"' in page.text
+        for changes, message in invalid_cases:
+            submitted = values | changes
+            response = submit(client, page, form_with(page, field="confirm_password"), submitted)
+            assert response.status_code == 200, changes
+            assert message in response.text, changes
+            assert PASSWORD not in response.text, "Password leaked into response HTML"
+            form = form_with(response, field="confirm_password")
+            assert form["values"]["email"] == submitted["email"]
+            assert form["values"]["username"] == submitted["username"]
+            assert form["values"]["password"] == form["values"]["confirm_password"] == ""
+
+        for changes in ({"email": "traveler@example.com"}, {"username": "traveler"}):
+            response = submit(client, page, form_with(page, field="confirm_password"), values | changes)
+            assert response.status_code == 200
+            assert "此電子郵件或使用者名稱已被使用" in response.text
+            assert PASSWORD not in response.text
+
+        # Retry from an error response and preserve the API's existing whitespace policy.
+        submitted = values | {"email": " new_user@example.com ", "username": " new_user ", "password": f" {PASSWORD} "}
+        created = submit(client, response, form_with(response, field="confirm_password"), submitted)
+        assert created.status_code == 303, created.status_code
+        assert created.headers["location"] == "/login?registered=1"
+        assert "tripsync_session" not in client.cookies, "Registration should not sign in automatically"
+        login_page = get_page(client, created.headers["location"])
+        assert "帳號建立成功，請使用新帳號登入" in login_page.text
+        sign_in(client, values["email"])
+        assert get_page(client, "/register").url.path == "/account"
+        print("PASS: registration links, field errors, duplicates, safe retries, success, and new-account login")
+
+
 def main():
     status = httpx.get(f"{API}/__test__/status", timeout=10).json()
     assert status["fixture"] == "tripsync-memory-only", "Disposable API required"
     assert status["trips"] == 0, "Restart the fixture before running this check"
+    check_registration()
     with httpx.Client(timeout=20) as owner, httpx.Client(timeout=20) as other:
         assert get_page(owner, "/trips").url.path == "/login"
         sign_in(owner, "traveler@example.com")

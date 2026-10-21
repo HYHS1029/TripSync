@@ -37,7 +37,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
+    <main className="flex min-h-screen items-center justify-center px-6">
       <div className="text-center">
         <h1 className="text-4xl font-bold">TripSync</h1>
 
@@ -45,12 +45,15 @@ export default function Home() {
           Backend status:{" "}
           <span className="font-semibold">{backendStatus}</span>
         </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link href="/trips" className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800">
             我的旅程
           </Link>
           <Link href="/login" className="rounded-xl border border-zinc-300 px-5 py-3 font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900">
             登入
+          </Link>
+          <Link href="/register" className="rounded-xl border border-zinc-300 px-5 py-3 font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900">
+            註冊
           </Link>
           <Link href="/account" className="rounded-xl border border-zinc-300 px-5 py-3 font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900">
             我的帳號
