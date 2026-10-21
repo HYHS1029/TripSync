@@ -8,6 +8,8 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from collections.abc import Generator
+from sqlalchemy.orm import Session
 
 
 # Load environment variables from .env
@@ -38,3 +40,12 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+
+def get_db() -> Generator[Session, None, None]:
+    """Provide a database session for each request."""
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
