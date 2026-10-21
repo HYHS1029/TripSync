@@ -3,13 +3,15 @@ Author: Jacky Hsieh
 Date: 2026-09-24 17:18:23
 FilePath: \TripSync\backend\app\main.py
 '''
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy import or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.auth import router as auth_router
+from app.api.dependencies import get_current_user
 from app.core.security import hash_password
 from app.database import engine, get_db
 from app.models.user import User
@@ -31,6 +33,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+
+
+@app.get("/users/me", response_model=UserResponse, tags=["users"])
+def read_current_user(
+    response: Response,
+    user: User = Depends(get_current_user),
+):
+    response.headers["Cache-Control"] = "no-store"
+    return user
 
 
 # Application health check
