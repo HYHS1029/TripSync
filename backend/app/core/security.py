@@ -7,6 +7,8 @@ Description: In User Settings Edit
 FilePath: \TripSync\backend\app\core\security.py
 '''
 from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -21,6 +23,16 @@ password_hasher = PasswordHash.recommended()
 JWT_ALGORITHM = "HS256"
 JWT_ISSUER = "tripsync-api"
 JWT_AUDIENCE = "tripsync"
+
+
+def hash_invitation_token(token: str) -> str:
+    """Invitation credentials are independent of login JWTs."""
+    return hashlib.sha256(b"tripsync-invite:" + token.encode("ascii")).hexdigest()
+
+
+def create_invitation_token() -> tuple[str, str]:
+    token = secrets.token_urlsafe(32)
+    return token, hash_invitation_token(token)
 
 
 def hash_password(password: str) -> str:

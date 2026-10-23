@@ -7,6 +7,7 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from collections.abc import Generator
 from sqlalchemy.orm import Session
@@ -49,3 +50,12 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def commit_transaction(db: Session) -> None:
+    """Commit a completed operation, restoring the session on database failure."""
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise

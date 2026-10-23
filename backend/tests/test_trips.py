@@ -21,7 +21,7 @@ from app.models.trip import Trip, TripMember
 from app.models.user import User
 
 
-class TripTests(unittest.TestCase):
+class TripTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.engine = create_engine(
@@ -80,6 +80,7 @@ class TripTests(unittest.TestCase):
             db.add(TripMember(trip_id=trip_id, user_id=self.ids[user]))
             db.commit()
 
+class TripTests(TripTestCase):
     def test_create_assigns_authenticated_owner_and_membership(self):
         trip = self.create()
         self.assertEqual(trip["owner_id"], self.ids[0])

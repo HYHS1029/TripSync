@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.database import get_db
 from app.models.trip import Trip, TripMember
+from app.models.activity import Activity
 from app.models.user import User
 from app.schemas.trip import TripCreate, TripResponse, TripUpdate
 
@@ -18,7 +19,14 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 TripId = Annotated[int, Path(gt=0, le=2_147_483_647)]
 
 
-def get_member_trip(trip_id: int, user_id: int, db: Session) -> Trip:
+def get_member_trip(trip_id: int, user_id: int, db: Session, *, lock: bool = False) -> Trip:
+    if lock:
+        # Lock the trip first, then check membership in a fresh statement. A JOIN
+        # evaluated before waiting on a lock could retain a removed membership.
+        trip = db.scalar(select(Trip).where(Trip.id == trip_id).with_for_update())
+        if trip is None or db.get(TripMember, (trip_id, user_id)) is None:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        return trip
     trip = db.scalar(
         select(Trip)
         .join(TripMember, TripMember.trip_id == Trip.id)
@@ -72,7 +80,7 @@ def read_trip(trip_id: TripId, response: Response, db: Database, user: CurrentUs
 def update_trip(
     trip_id: TripId, payload: TripUpdate, response: Response, db: Database, user: CurrentUser
 ):
-    trip = get_member_trip(trip_id, user.id, db)
+    trip = get_member_trip(trip_id, user.id, db, lock=True)
     require_owner(trip, user)
     changes = payload.model_dump(exclude_unset=True)
     start_date = changes.get("start_date", trip.start_date)
@@ -82,6 +90,16 @@ def update_trip(
             "loc": ["body", "end_date"],
             "msg": "End date must be on or after start date",
             "type": "value_error",
+        }])
+    outside = db.scalar(select(Activity.id).where(
+        Activity.trip_id == trip_id,
+        (Activity.activity_date < start_date) | (Activity.activity_date > end_date),
+    ).limit(1))
+    if outside is not None:
+        raise HTTPException(status_code=422, detail=[{
+            "loc": ["body", "end_date"],
+            "msg": "Trip dates must include all existing activities",
+            "type": "activity_date_range",
         }])
     for field, value in changes.items():
         setattr(trip, field, value)
@@ -97,7 +115,7 @@ def update_trip(
 
 @router.delete("/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_trip(trip_id: TripId, db: Database, user: CurrentUser):
-    trip = get_member_trip(trip_id, user.id, db)
+    trip = get_member_trip(trip_id, user.id, db, lock=True)
     require_owner(trip, user)
     try:
         db.delete(trip)

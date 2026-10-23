@@ -23,6 +23,8 @@ from app.database import Base, get_db
 from app.main import app
 from app.models.user import User
 from app.models.trip import Trip, TripMember
+from app.models.activity import Activity
+from app.models.invitation import TripInvitation
 
 
 engine = create_engine(
@@ -62,6 +64,8 @@ def test_status():
             "fixture": "tripsync-memory-only",
             "trips": db.scalar(select(func.count()).select_from(Trip)),
             "memberships": db.scalar(select(func.count()).select_from(TripMember)),
+            "activities": db.scalar(select(func.count()).select_from(Activity)),
+            "invitations": db.scalar(select(func.count()).select_from(TripInvitation)),
         }
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ FilePath: \TripSync\backend\app\main.py
 '''
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from sqlalchemy import or_, select, text
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +15,8 @@ from sqlalchemy.orm import Session
 from app.api.auth import router as auth_router
 from app.api.dependencies import get_current_user
 from app.api.trips import router as trips_router
+from app.api.members import router as members_router
+from app.api.activities import router as activities_router
 from app.core.security import hash_password
 from app.database import engine, get_db
 from app.models.user import User
@@ -37,6 +41,25 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(trips_router)
+app.include_router(members_router)
+app.include_router(activities_router)
+
+
+@app.middleware("http")
+async def private_response_headers(request, call_next):
+    response = await call_next(request)
+    # Include errors: private 404 responses must not become shared cache entries.
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(_request, error: RequestValidationError):
+    # FastAPI's default detail includes input values, potentially passwords/tokens.
+    return JSONResponse(status_code=422, content={"detail": [
+        {key: issue[key] for key in ("loc", "msg", "type")} for issue in error.errors()
+    ]})
 
 
 @app.get("/users/me", response_model=UserResponse, tags=["users"])
