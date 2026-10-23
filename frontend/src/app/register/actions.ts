@@ -51,7 +51,10 @@ export async function register(
     });
 
     if (response.status === 409) {
-      return { values, error: "此電子郵件或使用者名稱已被使用，請更換後再試。" };
+      return {
+        values,
+        error: "此電子郵件或使用者名稱已被使用，請更換後再試。",
+      };
     }
     if (response.status === 422) {
       const body = await response.json().catch(() => null);
@@ -63,7 +66,11 @@ export async function register(
       if (Array.isArray(body?.detail)) {
         for (const issue of body.detail) {
           const field: unknown = issue.loc?.[1];
-          if (field === "email" || field === "username" || field === "password") {
+          if (
+            field === "email" ||
+            field === "username" ||
+            field === "password"
+          ) {
             fieldErrors[field] = messages[field];
           }
         }
@@ -77,5 +84,9 @@ export async function register(
     return { values, error: "目前無法連線至註冊服務，請稍後再試。" };
   }
 
-  redirect("/login?registered=1");
+  redirect(
+    formData.get("next") === "join"
+      ? "/login?registered=1&next=join"
+      : "/login?registered=1",
+  );
 }

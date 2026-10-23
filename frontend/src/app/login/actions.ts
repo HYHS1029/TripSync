@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_BASE_URL, SESSION_COOKIE } from "@/lib/auth";
+import { PENDING_INVITATION } from "@/lib/invitations";
 
 export type LoginState = {
   error?: string;
@@ -71,10 +72,11 @@ export async function login(
     return { ...values, error: "目前無法連線至登入服務，請稍後再試。" };
   }
 
-  redirect("/account");
+  redirect(formData.get("next") === "join" ? "/join" : "/account");
 }
 
 export async function logout(): Promise<void> {
   (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete(PENDING_INVITATION);
   redirect("/login");
 }

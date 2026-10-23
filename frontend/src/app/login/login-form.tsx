@@ -3,11 +3,16 @@
 import { useActionState } from "react";
 import { login } from "./actions";
 
-export default function LoginForm() {
+export default function LoginForm({
+  returnToJoin = false,
+}: {
+  returnToJoin?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(login, {});
 
   return (
     <form action={formAction} className="space-y-5">
+      {returnToJoin && <input type="hidden" name="next" value="join" />}
       <div>
         <label htmlFor="email" className="mb-2 block text-sm font-medium">
           電子郵件

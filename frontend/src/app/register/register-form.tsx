@@ -53,16 +53,26 @@ const fields: Field[] = [
 
 const initialState: RegisterState = { values: { email: "", username: "" } };
 
-export default function RegisterForm() {
+export default function RegisterForm({
+  returnToJoin = false,
+}: {
+  returnToJoin?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(register, initialState);
 
   return (
     <form action={formAction} className="space-y-5">
+      {returnToJoin && <input type="hidden" name="next" value="join" />}
       {fields.map((field) => {
         const error = state.fieldErrors?.[field.name];
         return (
           <div key={field.name}>
-            <label htmlFor={field.name} className="mb-2 block text-sm font-medium">{field.label}</label>
+            <label
+              htmlFor={field.name}
+              className="mb-2 block text-sm font-medium"
+            >
+              {field.label}
+            </label>
             <input
               id={field.name}
               name={field.name}
@@ -72,20 +82,55 @@ export default function RegisterForm() {
               minLength={field.minLength}
               maxLength={field.maxLength}
               pattern={field.pattern}
-              defaultValue={field.name === "email" || field.name === "username" ? state.values[field.name] : undefined}
+              defaultValue={
+                field.name === "email" || field.name === "username"
+                  ? state.values[field.name]
+                  : undefined
+              }
               className="w-full rounded-xl border border-zinc-300 bg-transparent px-4 py-3 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700"
               aria-invalid={Boolean(error)}
-              aria-describedby={error ? `${field.name}-error` : field.hint ? `${field.name}-hint` : undefined}
+              aria-describedby={
+                error
+                  ? `${field.name}-error`
+                  : field.hint
+                    ? `${field.name}-hint`
+                    : undefined
+              }
             />
-            {field.hint && <p id={`${field.name}-hint`} className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{field.hint}</p>}
-            {error && <p id={`${field.name}-error`} className="mt-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
+            {field.hint && (
+              <p
+                id={`${field.name}-hint`}
+                className="mt-2 text-xs text-zinc-500 dark:text-zinc-400"
+              >
+                {field.hint}
+              </p>
+            )}
+            {error && (
+              <p
+                id={`${field.name}-error`}
+                className="mt-2 text-sm text-red-700 dark:text-red-300"
+              >
+                {error}
+              </p>
+            )}
           </div>
         );
       })}
       <div aria-live="polite" aria-atomic="true">
-        {state.error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{state.error}</p>}
+        {state.error && (
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+          >
+            {state.error}
+          </p>
+        )}
       </div>
-      <button type="submit" disabled={pending} className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 disabled:cursor-wait disabled:opacity-60">
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 disabled:cursor-wait disabled:opacity-60"
+      >
         {pending ? "建立帳號中…" : "建立帳號"}
       </button>
     </form>

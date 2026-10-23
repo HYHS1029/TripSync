@@ -8,7 +8,7 @@ import type { Trip, TripValues } from "@/lib/trip-types";
 export class TripApiError extends Error {
   constructor(
     public status: number,
-    public fieldErrors: Partial<Record<keyof TripValues, string>> = {},
+    public fieldErrors: Record<string, string> = {},
   ) {
     super("Trip request failed");
   }
@@ -18,7 +18,10 @@ export function isTripId(value: string | number): boolean {
   return /^[1-9]\d{0,9}$/.test(String(value)) && Number(value) <= 2_147_483_647;
 }
 
-export async function tripRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function tripRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) throw new TripApiError(401);
 
@@ -38,7 +41,7 @@ export async function tripRequest<T>(path: string, init?: RequestInit): Promise<
   }
 
   if (!response.ok) {
-    const fields: Partial<Record<keyof TripValues, string>> = {};
+    const fields: Record<string, string> = {};
     if (response.status === 422) {
       const body = await response.json().catch(() => null);
       const messages: Record<string, string> = {
@@ -47,11 +50,22 @@ export async function tripRequest<T>(path: string, init?: RequestInit): Promise<
         start_date: "請輸入有效的出發日期。",
         end_date: "請確認結束日期有效，且不早於出發日期。",
         description: "說明最多可輸入 2000 字元。",
+        title: "請輸入 1–100 字元的活動名稱。",
+        activity_date: "請選擇旅程日期範圍內的日期。",
+        start_time: "請輸入有效的開始時間。",
+        end_time: "請確認結束時間不早於開始時間。",
+        location: "地點最多可輸入 200 字元。",
+        notes: "備註最多可輸入 2000 字元。",
       };
       if (Array.isArray(body?.detail)) {
         for (const issue of body.detail) {
           const field = issue.loc?.[1] as keyof TripValues;
-          if (field && messages[field]) fields[field] = messages[field];
+          if (field && messages[field]) {
+            fields[field] =
+              issue.type === "activity_date_range"
+                ? "旅程日期必須涵蓋所有已安排的活動，請先調整活動日期。"
+                : messages[field];
+          }
         }
       }
     }
@@ -61,7 +75,7 @@ export async function tripRequest<T>(path: string, init?: RequestInit): Promise<
   return response.json() as Promise<T>;
 }
 
-function handlePageError(error: unknown): never {
+export function handlePageError(error: unknown): never {
   if (error instanceof TripApiError) {
     if (error.status === 401) redirect("/login");
     if (error.status === 404) notFound();
