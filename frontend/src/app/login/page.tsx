@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getDevelopmentCredentials } from "@/lib/dev-login";
 import LoginForm from "./login-form";
+import DevelopmentLoginForm from "./dev-login-form";
 
 export const metadata: Metadata = { title: "登入 | TripSync" };
 
@@ -16,6 +18,7 @@ export default async function LoginPage({
   // Keep the form available if the API is temporarily offline.
   const user = await getCurrentUser().catch(() => null);
   if (user) redirect(returnToJoin ? "/join" : "/account");
+  const developmentLoginEnabled = Boolean(await getDevelopmentCredentials());
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-12 dark:bg-zinc-950">
@@ -45,6 +48,7 @@ export default async function LoginPage({
             </p>
           )}
           <LoginForm returnToJoin={returnToJoin} />
+          {developmentLoginEnabled && <DevelopmentLoginForm returnToJoin={returnToJoin} />}
           <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             還沒有帳號？{" "}
             <Link

@@ -23,7 +23,7 @@
 | 前端 | 註冊、登入、帳號頁、旅程列表、日期導覽、行程／地圖、旅伴管理、記帳與結算 |
 | API | `GET /health`、`GET /health/db`、`POST /users`、`POST /auth/login`、`GET /users/me` |
 | 帳號註冊 | 首頁／登入頁入口、註冊表單、確認密碼、輸入驗證、Argon2id 密碼雜湊、重複帳號提示 |
-| 登入 | 密碼驗證、30 分鐘 JWT、HttpOnly Cookie、過期／無效 token 拒絕 |
+| 登入 | 密碼驗證、30 分鐘 JWT、HttpOnly Cookie、過期／無效 token 拒絕；可設定本機開發者快速登入 |
 | 旅程 | 五支 /trips CRUD API、建立者自動加入、成員讀取與擁有者管理權限 |
 | 旅伴 | 七天單次邀請、撤銷、加入、成員列表、退出與移除 |
 | 每日行程 | 活動 CRUD、分類、住宿期間、上下排序、目的地時區、Google 地點搜尋／地圖／交通串接（需設定金鑰） |
@@ -91,6 +91,26 @@ npm run dev -- --webpack
 
 `npm ci` 用於首次安裝或鎖定檔變更後，日常開發可直接執行 `npm run dev`。
 
+### 本機開發者快速登入
+
+日常測試可使用固定的 `developer@example.com` 帳號。在資料庫已啟動並套用 migration 後，執行一次：
+
+```powershell
+cd D:\TripSync\backend
+conda activate tripsync
+python scripts/setup_dev_login.py
+```
+
+重新啟動前端 `npm run dev -- --webpack`，開啟 [登入頁](http://localhost:3000/login)，點「開發者快速登入」。這是一般權限的獨立測試帳號；旅程和記帳儲存於本機 PostgreSQL，重啟服務會保留。重跑設定會沿用帳號，不會重設密碼或清空資料。先前 `:3001` 的記憶體示範資料不會自動移入。
+
+設定程式會產生隨機密碼，只存到 Git 忽略的 `frontend/.env.development.local`，瀏覽器不會收到密碼。登入仍走正常 API 密碼驗證與 30 分鐘 Cookie；不授予管理員權限。若帳號已存在但本機憑證不符，設定程式會停止，避免覆寫既有帳號。
+
+這個入口需要 `NODE_ENV=development`、明確啟用與本機網址，並在提交時再次檢查來源；`npm run build`／`npm run start` 的 production 模式一律停用。`npm run dev` 預設只綁定 `127.0.0.1`，請維持此設定並避免透過公開 tunnel 或代理對外提供開發伺服器。它提供「這台電腦上的便利登入」，不會驗證使用電腦的人是否為本人。
+
+要停用，可將該檔案的 `TRIPSYNC_DEV_LOGIN_ENABLED` 改為 `false` 並重啟前端；既有資料會保留。請保留本機憑證檔，不要把它上傳或分享。
+
+驗證入口限制時，可另外在 `:3001` 啟動 production 預覽，再於 `backend/` 執行 `python tests/check_dev_login.py`；會檢查一鍵登入、密碼不出現在 HTML／瀏覽器 bundle，以及正式版連直接呼叫 action 都無法取得登入 Cookie。
+
 ### 地圖開發設定
 
 開發與原型測試可使用 [Google Maps Demo Key](https://developers.google.com/maps/demo-key)，不需信用卡或計費帳戶；有每日 API 用量限制，達上限會暫停至配額重設。正式上線須另設定標準金鑰、來源限制與計費。
@@ -145,7 +165,7 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 ## 驗證
 
-在 `backend/` 執行 `python -m unittest discover -s tests -v`，93 項測試使用記憶體資料庫。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
+在 `backend/` 執行 `python -m unittest discover -s tests -v`，97 項測試使用記憶體資料庫。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
 
 ## 後續開發起點
 
