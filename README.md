@@ -1,8 +1,8 @@
 # TripSync
 
-多人旅行協作平台，目標是將旅程、成員、行程、分帳與投票集中管理。目前完成帳號、旅程 CRUD、旅伴邀請／管理，以及可共同編輯的每日活動。
+多人旅行協作平台，集中管理旅程、旅伴、地圖行程與記帳分帳。目前完成帳號、旅程 CRUD、旅伴邀請／管理、每日活動，以及地圖串接與記帳分帳第一版；地圖需要另設定 Google 服務。
 
-本文件依據 2026-10-23 的程式碼與本機環境整理。
+本文件依據 2026-10-28 的程式碼與本機環境整理。
 
 ## 專案文件
 
@@ -12,23 +12,26 @@
 - [旅程管理架構、程式碼與測試](docs/TRIP_MANAGEMENT.md)
 - [旅伴協作、每日行程與資安設計](docs/COLLABORATION_AND_ITINERARY.md)
 - [核心功能開發順序與驗收條件](docs/ROADMAP.md)
+- [地圖排行程、交通時間與記帳分帳需求](docs/MAP_AND_EXPENSES.md)
+- [地圖與帳務第一版：設定、使用、API 與驗證](docs/MAPS_AND_LEDGER.md)
 - [先前的需求與開發對話](https://chatgpt.com/share/6ad89323-5460-83ee-9757-d83a84f39fad)
 
 ## 目前完成的功能
 
 | 範圍 | 目前狀態 |
 | --- | --- |
-| 前端 | 註冊、登入、帳號頁、旅程列表、日期導覽與活動時間軸、旅伴與邀請管理 |
+| 前端 | 註冊、登入、帳號頁、旅程列表、日期導覽、行程／地圖、旅伴管理、記帳與結算 |
 | API | `GET /health`、`GET /health/db`、`POST /users`、`POST /auth/login`、`GET /users/me` |
 | 帳號註冊 | 首頁／登入頁入口、註冊表單、確認密碼、輸入驗證、Argon2id 密碼雜湊、重複帳號提示 |
 | 登入 | 密碼驗證、30 分鐘 JWT、HttpOnly Cookie、過期／無效 token 拒絕 |
 | 旅程 | 五支 /trips CRUD API、建立者自動加入、成員讀取與擁有者管理權限 |
 | 旅伴 | 七天單次邀請、撤銷、加入、成員列表、退出與移除 |
-| 每日行程 | 活動名稱／日期／時間／地點／備註，成員共同新增、編輯與刪除 |
-| 資料庫 | PostgreSQL、User／Trip／TripMember／TripInvitation／Activity、三個 Alembic migration |
+| 每日行程 | 活動 CRUD、分類、住宿期間、上下排序、目的地時區、Google 地點搜尋／地圖／交通串接（需設定金鑰） |
+| 記帳與分帳 | 單一旅程幣別、付款人／負擔人、均分／自訂、活動關聯、結算建議、部分還款及撤銷、歷史成員 |
+| 資料庫 | PostgreSQL、原有五個資料表加上 Expense／ExpenseShare／Settlement、四個 Alembic migration |
 | 開發環境 | 前後端各自啟動，Docker Compose 執行 PostgreSQL |
 
-分帳、投票與正式部署尚未實作。可從首頁點「註冊」，或直接開啟 `/register` 建立帳號，登入後進入 `/trips`。開啟旅程可安排每日活動，從「旅伴與邀請」邀請朋友共同規劃。目前檢查信箱格式，尚無收信驗證。
+地圖、地點搜尋、交通查詢及記帳分帳已可操作。本機 Maps Demo Key 已在全站 `no-referrer` 下通過真實地圖、景點搜尋、標記及交通路線驗證，未開啟計費或修改 Cloud 金鑰限制，詳見[第一版設定與狀態](docs/MAPS_AND_LEDGER.md)。Demo Key 供開發／原型測試；投票、正式金鑰與正式部署尚未完成。可從首頁點「註冊」建立帳號，登入後進入 `/trips`。開啟旅程可安排每日活動，從「旅伴與邀請」邀請朋友，從「記帳與分帳」管理開銷。目前尚無收信驗證。
 
 ## 本機啟動
 
@@ -83,10 +86,33 @@ python -m uvicorn app.main:app --reload
 ```powershell
 cd D:\TripSync\frontend
 npm ci
-npm run dev
+npm run dev -- --webpack
 ```
 
 `npm ci` 用於首次安裝或鎖定檔變更後，日常開發可直接執行 `npm run dev`。
+
+### 地圖開發設定
+
+開發與原型測試可使用 [Google Maps Demo Key](https://developers.google.com/maps/demo-key)，不需信用卡或計費帳戶；有每日 API 用量限制，達上限會暫停至配額重設。正式上線須另設定標準金鑰、來源限制與計費。
+
+在原有 `backend/.env` 下方新增：
+
+```dotenv
+GOOGLE_MAPS_API_KEY=YOUR_DEMO_KEY
+```
+
+在原有 `frontend/.env.local` 下方新增：
+
+```dotenv
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_DEMO_KEY
+NEXT_PUBLIC_GOOGLE_MAP_ID=DEMO_MAP_ID
+```
+
+Demo Key 測試階段可在兩個位置使用同一組金鑰，正式環境應分開設定前後端金鑰。`NEXT_PUBLIC_` 金鑰會出現在瀏覽器程式中；`.env`、`.env.local` 和建置結果均不納入 Git，請勿把實際金鑰寫入原始碼。
+
+修改金鑰後重啟後端；前端 dev 需重啟，production 需重新 build／start。本機已驗證 Demo Key 能在原有全站 `no-referrer` 下顯示地圖、景點標記與交通路線。這不代表其他標準金鑰的來源限制也已驗證。
+
+操作方式：在活動表單搜尋並選取實際地點，儲存後會在當日地圖顯示標記；住宿可填退房日，交通區可選方式與出發時間。從活動點「記一筆費用」可關聯行程，並在「記帳與分帳」查看分攤與還款。
 
 | 用途 | 網址 |
 | --- | --- |
@@ -119,8 +145,8 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 ## 驗證
 
-在 `backend/` 執行 `python -m unittest discover -s tests -v`，64 項測試使用記憶體資料庫。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false` 與 `npm run build`。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[協作與行程文件](docs/COLLABORATION_AND_ITINERARY.md#10-驗證與重跑)。
+在 `backend/` 執行 `python -m unittest discover -s tests -v`，93 項測試使用記憶體資料庫。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
 
 ## 後續開發起點
 
-旅伴協作與每日行程基礎已完成，接下來可加入分帳及投票。公開產品化前仍需完成信箱驗證、找回密碼、完整限流、HTTPS 部署與安全驗收；已實作防護與待辦見[資安說明](docs/COLLABORATION_AND_ITINERARY.md#9-已加入的防護與產品化前待辦)。
+地圖與帳務第一版已完成，並已用 Maps Demo Key 驗證真實地圖與交通路線。接著依使用回饋安排進階行程、多幣別或投票，詳見[開發順序](docs/ROADMAP.md)。公開產品化前須更換正式金鑰、驗證來源限制，並完成信箱驗證、找回密碼、完整限流、HTTPS 部署與安全驗收；已實作防護與待辦見[資安說明](docs/COLLABORATION_AND_ITINERARY.md#9-已加入的防護與產品化前待辦)。

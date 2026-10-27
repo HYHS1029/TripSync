@@ -21,6 +21,8 @@ function readValues(form: FormData): TripValues {
     start_date: read("start_date"),
     end_date: read("end_date"),
     description: read("description"),
+    timezone: read("timezone") || "Asia/Taipei",
+    currency: read("currency") || "TWD",
   };
 }
 
@@ -38,6 +40,8 @@ function errorState(error: unknown, values: TripValues): TripFormState {
         fieldErrors: error.fieldErrors,
       };
     }
+    if (error.status === 409)
+      return { values, error: "已有記帳或還款紀錄的旅程無法更換記帳幣別。" };
   }
   return { values, error: "暫時無法儲存旅程，請稍後再試。" };
 }

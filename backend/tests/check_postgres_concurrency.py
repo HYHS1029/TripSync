@@ -123,6 +123,35 @@ def main():
         with Session(isolated) as db:
             assert db.scalar(select(func.count()).select_from(TripInvitation).where(TripInvitation.trip_id == trip_id)) == 10
         print("PASS: concurrent invitation creation respects the database-backed limit")
+
+        trip_id = trip()
+        token = invite(trip_id)
+        assert request("POST", "/invitations/accept", user=1, json={"token": token}).status_code == 200
+        expense = {"title": "Shared hotel", "expense_date": "2027-02-03", "amount_minor": 10000,
+                   "payer_id": ids[0], "participant_ids": ids[:2]}
+        assert request("POST", f"/trips/{trip_id}/expenses", json=expense).status_code == 201
+        repayment = {"sender_id": ids[1], "recipient_id": ids[0], "amount_minor": 5000, "settled_on": "2027-02-04"}
+        responses = parallel([lambda: request("POST", f"/trips/{trip_id}/settlements", json=repayment) for _ in range(2)])
+        assert sorted(response.status_code for response in responses) == [201, 409]
+        ledger = request("GET", f"/trips/{trip_id}/ledger").json()
+        assert len(ledger["settlements"]) == 1
+        assert all(person["balance_minor"] == 0 for person in ledger["balances"])
+        print("PASS: concurrent full repayments cannot over-settle the same balance")
+
+        waiting.clear()
+        with Session(isolated) as owner_db:
+            owner_db.scalar(select(Trip).where(Trip.id == trip_id).with_for_update())
+            event.listen(engine, "before_cursor_execute", observe)
+            try:
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(request, "POST", f"/trips/{trip_id}/expenses", user=1, json=expense)
+                    assert waiting.wait(timeout=10)
+                    owner_db.delete(owner_db.get(TripMember, (trip_id, ids[1])))
+                    owner_db.commit()
+                    assert future.result(timeout=20).status_code == 404
+            finally:
+                event.remove(engine, "before_cursor_execute", observe)
+        print("PASS: waiting expense writers recheck membership after removal")
     finally:
         app.dependency_overrides.clear()
         with engine.begin() as connection:

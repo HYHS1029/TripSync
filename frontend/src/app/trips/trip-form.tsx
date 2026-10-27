@@ -5,7 +5,10 @@ import { useActionState } from "react";
 import type { Trip, TripValues, TripFormState } from "@/lib/trip-types";
 
 const fields: {
-  name: keyof Omit<TripValues, "description">;
+  name: keyof Pick<
+    TripValues,
+    "name" | "destination" | "start_date" | "end_date"
+  >;
   label: string;
   type: string;
   maxLength?: number;
@@ -43,6 +46,8 @@ export default function TripForm({
       start_date: trip?.start_date ?? "",
       end_date: trip?.end_date ?? "",
       description: trip?.description ?? "",
+      timezone: trip?.timezone ?? "Asia/Taipei",
+      currency: trip?.currency ?? "TWD",
     },
   });
   const inputClass =
@@ -85,6 +90,73 @@ export default function TripForm({
             )}
           </div>
         ))}
+      </div>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <label className="text-sm font-medium">
+          目的地時區
+          <input
+            name="timezone"
+            required
+            maxLength={64}
+            list="trip-timezones"
+            defaultValue={state.values.timezone}
+            className={inputClass}
+          />
+          <datalist id="trip-timezones">
+            {[
+              "Asia/Taipei",
+              "Asia/Tokyo",
+              "Asia/Seoul",
+              "Asia/Hong_Kong",
+              "Asia/Shanghai",
+              "Asia/Bangkok",
+              "Asia/Singapore",
+              "Europe/London",
+              "Europe/Paris",
+              "America/New_York",
+              "America/Los_Angeles",
+              "Australia/Sydney",
+            ].map((zone) => (
+              <option key={zone} value={zone} />
+            ))}
+          </datalist>
+          <span className="mt-2 block text-xs font-normal text-zinc-500">
+            交通查詢依當地時間計算，可輸入其他 IANA 時區。
+          </span>
+          {state.fieldErrors?.timezone && (
+            <span className="block text-red-700">
+              {state.fieldErrors.timezone}
+            </span>
+          )}
+        </label>
+        <label className="text-sm font-medium">
+          記帳幣別
+          <select
+            name="currency"
+            defaultValue={state.values.currency}
+            className={inputClass}
+          >
+            {[
+              "TWD",
+              "JPY",
+              "KRW",
+              "USD",
+              "EUR",
+              "GBP",
+              "HKD",
+              "CNY",
+              "THB",
+              "SGD",
+              "AUD",
+              "CAD",
+            ].map((currency) => (
+              <option key={currency}>{currency}</option>
+            ))}
+          </select>
+          <span className="mt-2 block text-xs font-normal text-zinc-500">
+            每趟旅程先使用一種幣別；開始記帳後固定。
+          </span>
+        </label>
       </div>
       <div>
         <label htmlFor="description" className="text-sm font-medium">

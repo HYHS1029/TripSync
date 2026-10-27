@@ -17,6 +17,8 @@ from app.api.dependencies import get_current_user
 from app.api.trips import router as trips_router
 from app.api.members import router as members_router
 from app.api.activities import router as activities_router
+from app.api.expenses import router as expenses_router
+from app.api.maps import router as maps_router
 from app.core.security import hash_password
 from app.database import engine, get_db
 from app.models.user import User
@@ -43,6 +45,8 @@ app.include_router(auth_router)
 app.include_router(trips_router)
 app.include_router(members_router)
 app.include_router(activities_router)
+app.include_router(expenses_router)
+app.include_router(maps_router)
 
 
 @app.middleware("http")

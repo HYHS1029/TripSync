@@ -269,6 +269,58 @@ def check_collaboration(owner, other, trip_path):
     print("PASS: registration continuation and activity deletion")
 
 
+def check_expenses(owner, other, trip_path):
+    # Set up membership through the existing browser forms.
+    token = invitation_link(owner, trip_path)
+    assert accept_link(other, token).status_code == 303
+    page = get_page(owner, trip_path + "/expenses/new")
+    participant_ids = re.findall(r'name="participant_ids"[^>]*value="(\d+)"', page.text)
+    assert len(participant_ids) == 2, participant_ids
+    values = {"title": "共同住宿費", "expense_date": "2027-01-15", "category": "lodging", "amount": "100.01",
+              "payer_id": participant_ids[0], "split_mode": "equal", "activity_id": "", "notes": "先付訂金"}
+
+    def expense_submit(page, changes=None, custom_entries=None):
+        submitted = values | (changes or {})
+        form = form_with(page, field="title")
+        entries = [(name, value) for name, value in form["hidden"] if name not in submitted]
+        entries += list(submitted.items()) + [("participant_ids", value) for value in participant_ids]
+        entries += custom_entries or []
+        return owner.post(str(page.url), files=[(name, (None, value)) for name, value in entries], headers={"Origin": FRONTEND, "Referer": str(page.url)})
+
+    invalid = expense_submit(page, {"amount": "100.001"})
+    assert invalid.status_code == 200 and "最多 2 位小數" in invalid.text
+    created = expense_submit(invalid)
+    assert created.status_code == 303, created.text[:500]
+    ledger = get_page(owner, trip_path + "/expenses")
+    assert "共同住宿費" in ledger.text and "50.01" in ledger.text and "50.00" in ledger.text
+    assert "共同住宿費" in get_page(other, trip_path + "/expenses").text
+    assert "編輯費用" not in get_page(other, trip_path + "/expenses").text
+    edit_path = re.search(rf"{re.escape(trip_path)}/expenses/\d+/edit", ledger.text).group(0)
+    edit = get_page(owner, edit_path)
+    custom = expense_submit(edit, {"amount": "100.00", "split_mode": "custom"},
+                            [(f"share_{participant_ids[0]}", "25.00"), (f"share_{participant_ids[1]}", "75.00")])
+    assert custom.status_code == 303
+    ledger = get_page(owner, trip_path + "/expenses")
+    assert "自訂金額" in ledger.text and "75.00" in ledger.text
+    settlement = get_page(owner, trip_path + "/settlements/new")
+    settled = submit(owner, settlement, form_with(settlement, field="amount"), {
+        "sender_id": participant_ids[1], "recipient_id": participant_ids[0], "amount": "25.00",
+        "settled_on": "2027-02-05", "notes": "部分還款"})
+    assert settled.status_code == 303, settled.text[:500]
+    ledger = get_page(owner, trip_path + "/expenses")
+    assert "部分還款" in ledger.text and "50.00" in ledger.text
+    bad_currency = get_page(owner, trip_path + "/edit")
+    blocked = submit(owner, bad_currency, form_with(bad_currency, field="name"), {
+        "name": "北海道滑雪之旅", "destination": "日本・北海道", "start_date": "2027-02-03", "end_date": "2027-02-10",
+        "description": "Skiing with friends", "timezone": "Asia/Tokyo", "currency": "JPY"})
+    assert blocked.status_code == 200 and "無法更換記帳幣別" in blocked.text
+    members = get_page(other, trip_path + "/members")
+    assert submit(other, members, form_with(members, text="確認退出旅程")).status_code == 303
+    assert "已離開" in get_page(owner, trip_path + "/expenses").text
+    assert "找不到這個旅程" in get_page(other, trip_path + "/expenses").text
+    print("PASS: expense forms, decimal validation, deterministic split, custom edit, member permissions, partial repayment, currency guard and departed-member history")
+
+
 def main():
     status = httpx.get(f"{API}/__test__/status", timeout=10).json()
     assert status["fixture"] == "tripsync-memory-only", "Disposable API required"
@@ -305,6 +357,7 @@ def main():
         assert "找不到這個旅程" in get_page(other, trip_path + "/edit").text
         print("PASS: second account cannot list, read, or open the edit form")
         check_collaboration(owner, other, trip_path)
+        check_expenses(owner, other, trip_path)
 
         edit = get_page(owner, trip_path + "/edit")
         invalid_edit = submit(owner, edit, form_with(edit, field="name"), values | {"end_date": "2027-02-01"})

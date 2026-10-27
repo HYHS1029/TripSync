@@ -21,6 +21,9 @@ function readValues(form: FormData): ActivityValues {
     end_time: read("end_time"),
     location: read("location"),
     notes: read("notes"),
+    place_id: read("place_id"),
+    category: read("category") || "sight",
+    stay_until: read("stay_until"),
   };
 }
 export async function saveActivity(
@@ -42,6 +45,8 @@ export async function saveActivity(
           ...values,
           start_time: values.start_time || null,
           end_time: values.end_time || null,
+          place_id: values.place_id || null,
+          stay_until: values.stay_until || null,
         }),
       },
     );
@@ -56,7 +61,8 @@ export async function saveActivity(
       if (error.status === 422)
         return {
           values,
-          error: "請確認日期在旅程範圍內，且結束時間不早於開始時間。",
+          error:
+            "請確認日期在旅程範圍內，且退房日期、活動結束時間與地點資料有效。",
           fieldErrors: error.fieldErrors,
         };
       if (error.status === 409)

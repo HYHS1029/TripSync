@@ -56,6 +56,9 @@ export async function tripRequest<T>(
         end_time: "請確認結束時間不早於開始時間。",
         location: "地點最多可輸入 200 字元。",
         notes: "備註最多可輸入 2000 字元。",
+        timezone: "請輸入有效的 IANA 時區，例如 Asia/Tokyo。",
+        currency: "請選擇支援的記帳幣別。",
+        stay_until: "退房日期需在入住日之後，且位於旅程日期範圍內。",
       };
       if (Array.isArray(body?.detail)) {
         for (const issue of body.detail) {

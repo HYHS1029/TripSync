@@ -9,6 +9,7 @@ from app.api.dependencies import get_current_user
 from app.database import get_db
 from app.models.trip import Trip, TripMember
 from app.models.activity import Activity
+from app.models.expense import Expense, Settlement
 from app.models.user import User
 from app.schemas.trip import TripCreate, TripResponse, TripUpdate
 
@@ -83,6 +84,10 @@ def update_trip(
     trip = get_member_trip(trip_id, user.id, db, lock=True)
     require_owner(trip, user)
     changes = payload.model_dump(exclude_unset=True)
+    if changes.get("currency", trip.currency) != trip.currency:
+        if (db.scalar(select(Expense.id).where(Expense.trip_id == trip_id).limit(1)) is not None
+                or db.scalar(select(Settlement.id).where(Settlement.trip_id == trip_id).limit(1)) is not None):
+            raise HTTPException(status_code=409, detail="Currency cannot change after ledger entries exist")
     start_date = changes.get("start_date", trip.start_date)
     end_date = changes.get("end_date", trip.end_date)
     if end_date < start_date:
@@ -93,7 +98,7 @@ def update_trip(
         }])
     outside = db.scalar(select(Activity.id).where(
         Activity.trip_id == trip_id,
-        (Activity.activity_date < start_date) | (Activity.activity_date > end_date),
+        (Activity.activity_date < start_date) | (Activity.activity_date > end_date) | (Activity.stay_until > end_date),
     ).limit(1))
     if outside is not None:
         raise HTTPException(status_code=422, detail=[{

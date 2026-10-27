@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     jwt_secret_key: SecretStr = Field(min_length=32)
     access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)
+    google_maps_api_key: SecretStr | None = None
 
 
 @lru_cache

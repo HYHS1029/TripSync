@@ -5,6 +5,8 @@ export type Trip = {
   start_date: string;
   end_date: string;
   description: string | null;
+  timezone: string;
+  currency: string;
   owner_id: number;
   created_at: string;
   updated_at: string;
@@ -16,6 +18,8 @@ export type TripValues = {
   start_date: string;
   end_date: string;
   description: string;
+  timezone: string;
+  currency: string;
 };
 
 export type TripFormState = {
@@ -49,10 +53,13 @@ export type ActivityValues = {
   end_time: string;
   location: string;
   notes: string;
+  place_id: string;
+  category: string;
+  stay_until: string;
 };
 export type Activity = Omit<
   ActivityValues,
-  "start_time" | "end_time" | "location" | "notes"
+  "start_time" | "end_time" | "location" | "notes" | "place_id" | "stay_until"
 > & {
   id: number;
   trip_id: number;
@@ -61,6 +68,9 @@ export type Activity = Omit<
   end_time: string | null;
   location: string | null;
   notes: string | null;
+  place_id: string | null;
+  stay_until: string | null;
+  position: number | null;
 };
 export type ActivityFormState = {
   values: ActivityValues;
@@ -85,11 +95,11 @@ export function addDays(day: string, amount: number): string {
 export function isTripDay(day: unknown, trip: Trip): day is string {
   return Boolean(
     typeof day === "string" &&
-      /^\d{4}-\d{2}-\d{2}$/.test(day) &&
-      day >= trip.start_date &&
-      day <= trip.end_date &&
-      Number.isFinite(Date.parse(day)) &&
-      new Date(day).toISOString().slice(0, 10) === day,
+    /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+    day >= trip.start_date &&
+    day <= trip.end_date &&
+    Number.isFinite(Date.parse(day)) &&
+    new Date(day).toISOString().slice(0, 10) === day,
   );
 }
 

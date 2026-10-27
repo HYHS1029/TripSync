@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { Activity, ActivityFormState, Trip } from "@/lib/trip-types";
+import PlacePicker from "./place-picker";
+import { categories } from "@/lib/planner-types";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-zinc-300 bg-transparent px-4 py-3 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700";
@@ -27,9 +29,13 @@ export default function ActivityForm({
       end_time: activity?.end_time?.slice(0, 5) ?? "",
       location: activity?.location ?? "",
       notes: activity?.notes ?? "",
+      place_id: activity?.place_id ?? "",
+      category: activity?.category ?? "sight",
+      stay_until: activity?.stay_until ?? "",
     },
   };
   const [state, action, pending] = useActionState(saveAction, initial);
+  const [category, setCategory] = useState(initial.values.category);
   const fields = [
     {
       name: "title" as const,
@@ -51,14 +57,34 @@ export default function ActivityForm({
     { name: "end_time" as const, label: "結束時間（選填）", type: "time" },
     {
       name: "location" as const,
-      label: "地點（選填）",
+      label: "地點說明（選填）",
       type: "text",
       maxLength: 200,
-      placeholder: "景點、餐廳、集合地址…",
+      placeholder: "例如：在車站東出口集合…",
     },
   ];
   return (
     <form action={action} className="space-y-6">
+      <label className="block text-sm font-medium">
+        地點類型
+        <select
+          name="category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className={inputClass}
+        >
+          {Object.entries(categories).map(([value, item]) => (
+            <option key={value} value={value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <PlacePicker
+        key={`${state.values.place_id}-${state.error ?? ""}`}
+        tripId={trip.id}
+        initialId={state.values.place_id}
+      />
       <div className="grid gap-6 sm:grid-cols-2">
         {fields.map((field) => (
           <div
@@ -95,8 +121,25 @@ export default function ActivityForm({
           </div>
         ))}
       </div>
+      {category === "lodging" && (
+        <label className="block text-sm font-medium">
+          退房日期（選填）
+          <input
+            name="stay_until"
+            type="date"
+            min={trip.start_date}
+            max={trip.end_date}
+            defaultValue={state.values.stay_until}
+            className={inputClass}
+          />
+          <span className="mt-2 block text-xs font-normal text-zinc-500">
+            活動日期為入住日；住宿也會出現在入住日至退房日的地圖上。
+          </span>
+        </label>
+      )}
       <p className="text-xs leading-6 text-zinc-500">
-        時間以旅程當地的鐘面時間記錄，不進行時區轉換；暫未決定時可留白。跨夜活動請分別記在兩天。
+        時間以 {trip.timezone}{" "}
+        當地時間記錄，交通查詢會依此換算。暫未決定時可留白，跨夜活動請分別記在兩天。
       </p>
       <div>
         <label htmlFor="notes" className="text-sm font-medium">

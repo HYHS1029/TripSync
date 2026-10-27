@@ -85,7 +85,7 @@ class TripTests(TripTestCase):
         trip = self.create()
         self.assertEqual(trip["owner_id"], self.ids[0])
         self.assertEqual(trip["name"], self.payload["name"])
-        self.assertEqual(set(trip), {"id", "name", "destination", "start_date", "end_date", "description", "owner_id", "created_at", "updated_at"})
+        self.assertEqual(set(trip), {"id", "name", "destination", "start_date", "end_date", "description", "timezone", "currency", "owner_id", "created_at", "updated_at"})
         with Session(self.engine) as db:
             self.assertIsNotNone(db.get(TripMember, (trip["id"], self.ids[0])))
 

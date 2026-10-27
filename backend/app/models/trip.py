@@ -18,6 +18,8 @@ class Trip(Base):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    timezone: Mapped[str] = mapped_column(String(64), default="Asia/Taipei", server_default="Asia/Taipei")
+    currency: Mapped[str] = mapped_column(String(3), default="TWD", server_default="TWD")
     owner_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )

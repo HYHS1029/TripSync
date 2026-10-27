@@ -6,7 +6,7 @@ export default function TripHeader({
   active,
 }: {
   trip: Trip;
-  active: "itinerary" | "members";
+  active: "itinerary" | "members" | "expenses";
 }) {
   return (
     <>
@@ -34,6 +34,9 @@ export default function TripHeader({
             {tripDays(trip)} 天
           </span>
           <span>私人旅程</span>
+          <span>
+            {trip.timezone} · {trip.currency}
+          </span>
         </div>
       </header>
       <nav
@@ -42,6 +45,11 @@ export default function TripHeader({
       >
         {[
           { key: "itinerary", href: `/trips/${trip.id}`, label: "每日行程" },
+          {
+            key: "expenses",
+            href: `/trips/${trip.id}/expenses`,
+            label: "記帳與分帳",
+          },
           {
             key: "members",
             href: `/trips/${trip.id}/members`,

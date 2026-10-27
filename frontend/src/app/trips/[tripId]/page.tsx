@@ -7,8 +7,7 @@ import { getActivities, getMembers } from "@/lib/collaboration";
 import { addDays, formatTripDate, isTripDay, tripDays } from "@/lib/trip-types";
 import DeleteTripForm from "../delete-trip-form";
 import TripHeader from "../trip-header";
-import ConfirmAction from "../confirm-action";
-import { deleteActivity } from "../activity-actions";
+import DayPlanner from "../day-planner";
 import { deleteTrip } from "../actions";
 
 export const metadata: Metadata = { title: "每日行程 | TripSync" };
@@ -44,14 +43,20 @@ export default async function TripPage({
       activity.activity_date,
       (counts.get(activity.activity_date) ?? 0) + 1,
     );
-  const today = activities.filter((activity) => activity.activity_date === day);
   const owner = trip.owner_id === user.id;
+  const planActivities = activities.filter(
+    (activity) =>
+      activity.activity_date === day ||
+      (activity.category === "lodging" &&
+        activity.activity_date <= day &&
+        (activity.stay_until ?? activity.activity_date) >= day),
+  );
   const newPath = `/trips/${trip.id}/activities/new?day=${day}`;
 
   return (
     <>
       <TripHeader trip={trip} active="itinerary" />
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="space-y-8">
         <section aria-labelledby="daily-heading" className="min-w-0">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -144,75 +149,22 @@ export default async function TripPage({
               )}
             </div>
           </div>
-          {today.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center dark:border-zinc-700">
-              <p className="text-3xl" aria-hidden="true">
-                ☀
-              </p>
-              <h3 className="mt-4 text-lg font-semibold">
-                這一天，還有很多可能
-              </h3>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-500">
-                加上想去的景點、想吃的餐廳，或留一段自由探索的時間。
-              </p>
-              <Link
-                href={newPath}
-                className="mt-6 inline-block rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white"
-              >
-                安排第一個活動
-              </Link>
-            </div>
-          ) : (
-            <ol className="mt-6 space-y-4">
-              {today.map((activity) => (
-                <li key={activity.id} className="flex gap-3 sm:gap-5">
-                  <div className="w-14 shrink-0 pt-5 text-right text-sm font-semibold text-teal-800 dark:text-teal-300">
-                    {activity.start_time?.slice(0, 5) ?? "未定"}
-                    {activity.end_time && (
-                      <span className="mt-1 block text-xs font-normal text-zinc-500">
-                        至 {activity.end_time.slice(0, 5)}
-                      </span>
-                    )}
-                  </div>
-                  <article className="min-w-0 flex-1 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h3 className="break-words text-lg font-bold">
-                      {activity.title}
-                    </h3>
-                    {activity.location && (
-                      <p className="mt-2 break-words text-sm text-teal-800 dark:text-teal-300">
-                        ⌖ {activity.location}
-                      </p>
-                    )}
-                    {activity.notes && (
-                      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                        {activity.notes}
-                      </p>
-                    )}
-                    <div className="mt-4 flex flex-wrap items-start gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                      <Link
-                        href={`/trips/${trip.id}/activities/${activity.id}/edit`}
-                        className="rounded-lg px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                      >
-                        編輯活動
-                      </Link>
-                      <ConfirmAction
-                        action={deleteActivity.bind(
-                          null,
-                          trip.id,
-                          activity.id,
-                          day,
-                        )}
-                        label="刪除活動"
-                        confirmation={`確定刪除「${activity.title}」？這項操作無法復原。`}
-                      />
-                    </div>
-                  </article>
-                </li>
-              ))}
-            </ol>
-          )}
+          <DayPlanner
+            key={
+              day +
+              planActivities
+                .map(
+                  (item) =>
+                    `${item.id}:${item.position}:${item.place_id}:${item.start_time}:${item.end_time}:${item.activity_date}:${item.stay_until}`,
+                )
+                .join(",")
+            }
+            trip={trip}
+            day={day}
+            activities={planActivities}
+          />
         </section>
-        <aside className="space-y-5">
+        <aside className="grid items-start gap-5 md:grid-cols-3">
           <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="font-semibold">旅程筆記</h2>
             <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-zinc-600 dark:text-zinc-400">
