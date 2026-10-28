@@ -20,6 +20,7 @@ from app.api.activities import router as activities_router
 from app.api.expenses import router as expenses_router
 from app.api.maps import router as maps_router
 from app.core.security import hash_password
+from app.core.config import get_settings
 from app.database import engine, get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
@@ -35,7 +36,7 @@ app = FastAPI(
 # Allow the frontend development server to access the backend API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=get_settings().cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

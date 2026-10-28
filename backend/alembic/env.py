@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -6,6 +7,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.database import Base, DATABASE_URL
+from app.core.database_config import normalize_database_url
 from app.models.user import User
 from app.models.trip import Trip, TripMember
 from app.models.invitation import TripInvitation
@@ -15,7 +17,10 @@ from app.models.expense import Expense, ExpenseShare, Settlement
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+# Migrations use Neon's direct URL; the running API uses its pooled URL.
+migration_url = normalize_database_url(os.getenv("MIGRATION_DATABASE_URL") or DATABASE_URL)
+# ConfigParser treats percent signs in URL-escaped passwords as interpolation.
+config.set_main_option("sqlalchemy.url", migration_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
