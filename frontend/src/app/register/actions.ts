@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { API_BASE_URL } from "@/lib/auth";
+import { backendRequest } from "@/lib/backend-request";
 
 type RegisterField = "email" | "username" | "password" | "confirm_password";
 
@@ -42,7 +42,7 @@ export async function register(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await backendRequest("/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...values, password }),

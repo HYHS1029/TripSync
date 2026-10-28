@@ -4,6 +4,7 @@ Date: 2026-09-29 17:30:29
 FilePath: \TripSync\backend\app\database.py
 '''
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -11,16 +12,18 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from collections.abc import Generator
 from sqlalchemy.orm import Session
+from app.core.database_config import database_engine_options, normalize_database_url
 
 
 # Load environment variables from .env
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not configured")
+DATABASE_URL = normalize_database_url(DATABASE_URL)
 
 
 # Base class for all SQLAlchemy ORM models
@@ -31,7 +34,7 @@ class Base(DeclarativeBase):
 # Create the SQLAlchemy database engine
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
+    **database_engine_options(os.getenv("VERCEL") == "1"),
 )
 
 

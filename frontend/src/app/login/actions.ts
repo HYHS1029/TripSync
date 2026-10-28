@@ -2,7 +2,8 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { API_BASE_URL, SESSION_COOKIE } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/auth";
+import { backendRequest } from "@/lib/backend-request";
 import { PENDING_INVITATION } from "@/lib/invitations";
 import { getDevelopmentCredentials } from "@/lib/dev-login";
 
@@ -31,7 +32,7 @@ export async function login(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await backendRequest("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: values.email, password }),

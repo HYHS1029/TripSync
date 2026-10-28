@@ -6,6 +6,7 @@
 
 ## 專案文件
 
+- [Vercel＋Neon 熟人測試站部署步驟](DEPLOYMENT.md)
 - [功能、架構、API 與後續開發順序](docs/PROJECT_OVERVIEW.md)
 - [每個檔案的用途與修改位置](docs/FILE_GUIDE.md)
 - [註冊／登入設計、API 與測試方法](docs/AUTHENTICATION.md)
@@ -45,7 +46,7 @@ conda activate tripsync
 python -m pip install -r requirements.txt
 ```
 
-Python 套件以根目錄 `requirements.txt` 為唯一來源；`backend/requirements.txt` 引用相同清單。登入新增的 PyJWT 也包含在其中。
+Python 套件以 `backend/requirements.txt` 為唯一來源，讓後端可獨立部署；根目錄 `requirements.txt` 引用相同清單。登入新增的 PyJWT 也包含在其中。
 
 設定 `backend/.env`，格式參考 `backend/.env.example`：`DATABASE_URL` 須符合 PostgreSQL 連線設定，`JWT_SECRET_KEY` 必須使用自己的隨機金鑰（至少 32 字元），`ACCESS_TOKEN_EXPIRE_MINUTES` 預設為 30。可用以下指令產生金鑰，再寫入本機 `.env`：
 
@@ -165,7 +166,7 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 ## 驗證
 
-在 `backend/` 執行 `python -m unittest discover -s tests -v`，97 項測試使用記憶體資料庫。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
+在 `backend/` 執行 `python -m unittest discover -s tests -v`，103 項測試使用隔離記憶體資料庫與設定檢查。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
 
 ## 後續開發起點
 

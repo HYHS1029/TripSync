@@ -2,7 +2,8 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { API_BASE_URL, SESSION_COOKIE } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/auth";
+import { backendRequest } from "./backend-request";
 import type { Trip, TripValues } from "@/lib/trip-types";
 
 export class TripApiError extends Error {
@@ -30,7 +31,7 @@ export async function tripRequest<T>(
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Bearer ${token}`);
     if (init?.body) headers.set("Content-Type", "application/json");
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await backendRequest(path, {
       ...init,
       headers,
       cache: "no-store",
