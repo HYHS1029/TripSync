@@ -44,7 +44,7 @@ def prepare_account(db: Session, config: dict) -> tuple[str, bool]:
     )
     if user:
         if (
-            user.email != EMAIL or user.username != USERNAME
+            (user.email or user.pending_email) != EMAIL or user.username != USERNAME
             or not valid_config or not verify_password(password, user.password_hash)
         ):
             raise ValueError("An existing account conflicts with dev setup; no password was changed.")
@@ -53,7 +53,7 @@ def prepare_account(db: Session, config: dict) -> tuple[str, bool]:
     # Reuse a previously saved credential if a prior database commit failed.
     if not valid_config:
         password = secrets.token_urlsafe(48)
-    db.add(User(email=EMAIL, username=USERNAME, password_hash=hash_password(password)))
+    db.add(User(pending_email=EMAIL, username=USERNAME, password_hash=hash_password(password)))
     db.flush()
     return password, True
 

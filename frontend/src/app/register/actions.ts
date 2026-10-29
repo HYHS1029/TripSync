@@ -25,7 +25,7 @@ export async function register(
   const confirmation = read("confirm_password");
   const fieldErrors: RegisterState["fieldErrors"] = {};
 
-  if (!values.email || values.email.length > 254) {
+  if (values.email.length > 254) {
     fieldErrors.email = "請輸入有效的電子郵件。";
   }
   if (!/^[A-Za-z0-9_]{3,50}$/.test(values.username)) {
@@ -45,7 +45,7 @@ export async function register(
     const response = await backendRequest("/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, password }),
+      body: JSON.stringify({ ...values, email: values.email || null, password }),
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
     });
@@ -53,7 +53,7 @@ export async function register(
     if (response.status === 409) {
       return {
         values,
-        error: "此電子郵件或使用者名稱已被使用，請更換後再試。",
+        error: "此使用者名稱已被使用，請更換後再試。",
       };
     }
     if (response.status === 422) {

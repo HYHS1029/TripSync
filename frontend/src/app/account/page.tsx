@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isEmailVerificationEnabled } from "@/lib/auth-features";
 import { logout } from "@/app/login/actions";
+import EmailVerificationForm from "./email-verification-form";
 
 export const metadata: Metadata = { title: "我的帳號 | TripSync" };
 
 export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const emailVerificationEnabled = isEmailVerificationEnabled();
 
   const joinedAt = new Intl.DateTimeFormat("zh-TW", {
     dateStyle: "long",
@@ -39,16 +42,17 @@ export default async function AccountPage() {
               <dt className="text-sm text-zinc-500 dark:text-zinc-400">使用者名稱</dt>
               <dd className="mt-1 break-words font-medium">{user.username}</dd>
             </div>
-            <div>
+            {(emailVerificationEnabled || user.email) && <div>
               <dt className="text-sm text-zinc-500 dark:text-zinc-400">電子郵件</dt>
-              <dd className="mt-1 break-all font-medium">{user.email}</dd>
-            </div>
+              <dd className="mt-1 break-all font-medium">{user.email ?? "尚未綁定"}{user.email_verified_at && <span className="ml-2 text-sm text-teal-700 dark:text-teal-300">已驗證</span>}</dd>
+            </div>}
             <div>
               <dt className="text-sm text-zinc-500 dark:text-zinc-400">加入日期</dt>
               <dd className="mt-1 font-medium">{joinedAt}</dd>
             </div>
           </dl>
         </section>
+        {emailVerificationEnabled && <EmailVerificationForm email={user.email} pendingEmail={user.pending_email} />}
       </div>
     </main>
   );

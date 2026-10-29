@@ -52,6 +52,7 @@ class AuthenticationTests(unittest.TestCase):
         with Session(self.engine) as db:
             user = User(
                 email="traveler@example.com",
+                email_verified_at=datetime.now(timezone.utc),
                 username="traveler",
                 password_hash=self.password_hash,
             )
@@ -126,7 +127,7 @@ class AuthenticationTests(unittest.TestCase):
         response = self.client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["cache-control"], "no-store")
-        self.assertEqual(set(response.json()), {"id", "email", "username", "created_at"})
+        self.assertEqual(set(response.json()), {"id", "email", "email_verified_at", "pending_email", "username", "created_at"})
         self.assertEqual(response.json()["id"], self.user_id)
 
     def test_unknown_email_and_wrong_password_have_same_error(self):
@@ -146,7 +147,7 @@ class AuthenticationTests(unittest.TestCase):
     def test_invalid_login_payloads(self):
         for body in [
             {},
-            {"email": "invalid", "password": self.password},
+            {"email": "invalid@", "password": self.password},
             {"email": "traveler@example.com", "password": "short"},
             {"email": "traveler@example.com", "password": "x" * 129},
             {"email": "traveler@example.com", "password": None},
@@ -221,10 +222,13 @@ class AuthenticationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertNotIn("password_hash", response.json())
         with Session(self.engine) as db:
-            user = db.scalar(select(User).where(User.email == "new@example.com"))
+            user = db.scalar(select(User).where(User.username == "new_user"))
+            self.assertIsNone(user.email)
+            self.assertEqual(user.pending_email, "new@example.com")
             self.assertNotEqual(user.password_hash, self.password)
             self.assertTrue(verify_password(self.password, user.password_hash))
-        token = self.login(email="new@example.com").json()["access_token"]
+        self.assertEqual(self.login(email="new@example.com").status_code, 401)
+        token = self.login(email="new_user").json()["access_token"]
         me = self.client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(me.json()["username"], "new_user")
 

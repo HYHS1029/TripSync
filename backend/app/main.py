@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -106,21 +106,18 @@ def create_user(
 ):
     existing_user = db.scalar(
         select(User).where(
-            or_(
-                User.email == payload.email,
-                User.username == payload.username,
-            )
+            User.username == payload.username,
         )
     )
 
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email or username already exists",
+            detail="Username already exists",
         )
 
     user = User(
-        email=payload.email,
+        pending_email=payload.email,
         username=payload.username,
         password_hash=hash_password(payload.password),
     )
@@ -134,7 +131,7 @@ def create_user(
 
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email or username already exists",
+            detail="Username already exists",
         )
 
     db.refresh(user)

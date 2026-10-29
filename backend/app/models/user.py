@@ -19,12 +19,18 @@ class User(Base):
         autoincrement=True,
     )
 
-    email: Mapped[str] = mapped_column(
+    # Only verified addresses are bound here; pending addresses never reserve an email.
+    email: Mapped[str | None] = mapped_column(
         String(255),
         unique=True,
-        nullable=False,
+        nullable=True,
         index=True,
     )
+
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    pending_email: Mapped[str | None] = mapped_column(String(255))
+    email_verification_token_hash: Mapped[str | None] = mapped_column(String(64))
+    email_verification_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     username: Mapped[str] = mapped_column(
         String(50),

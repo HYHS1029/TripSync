@@ -16,5 +16,5 @@ export async function getDevelopmentCredentials(requireOrigin = false) {
   if (email !== "developer@example.com" || !password || password.length < 32 || password.length > 128) {
     return null;
   }
-  return { email, password };
+  return { identifier: "TripSync 開發者", password };
 }

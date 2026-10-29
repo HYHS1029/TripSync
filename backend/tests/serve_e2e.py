@@ -5,6 +5,7 @@ Accounts: traveler@example.com, other@example.com / correct-horse-battery-123
 """
 
 import os
+from datetime import datetime, timezone
 import sys
 from pathlib import Path
 
@@ -43,8 +44,8 @@ Base.metadata.create_all(engine)
 with Session(engine) as db:
     password_hash = hash_password("correct-horse-battery-123")
     db.add_all([
-        User(email="traveler@example.com", username="traveler", password_hash=password_hash),
-        User(email="other@example.com", username="other", password_hash=password_hash),
+        User(email="traveler@example.com", email_verified_at=datetime.now(timezone.utc), username="traveler", password_hash=password_hash),
+        User(email="other@example.com", email_verified_at=datetime.now(timezone.utc), username="other", password_hash=password_hash),
     ])
     db.commit()
 

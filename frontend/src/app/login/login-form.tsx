@@ -4,28 +4,32 @@ import { useActionState } from "react";
 import { login } from "./actions";
 
 export default function LoginForm({
-  returnToJoin = false,
+  next,
+  emailVerificationEnabled = false,
 }: {
-  returnToJoin?: boolean;
+  next?: "join" | "verify-email";
+  emailVerificationEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(login, {});
 
   return (
     <form action={formAction} className="space-y-5">
-      {returnToJoin && <input type="hidden" name="next" value="join" />}
+      {next && <input type="hidden" name="next" value={next} />}
       <div>
-        <label htmlFor="email" className="mb-2 block text-sm font-medium">
-          電子郵件
+        <label htmlFor="identifier" className="mb-2 block text-sm font-medium">
+          {emailVerificationEnabled ? "使用者名稱或已驗證的電子郵件" : "使用者名稱"}
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={state.email}
+          id="identifier"
+          name="identifier"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          defaultValue={state.identifier}
           required
           maxLength={254}
-          placeholder="you@example.com"
+          placeholder={emailVerificationEnabled ? "traveler 或 you@example.com" : "traveler"}
           className="w-full rounded-xl border border-zinc-300 bg-transparent px-4 py-3 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-zinc-700"
           aria-describedby={state.error ? "login-error" : undefined}
         />

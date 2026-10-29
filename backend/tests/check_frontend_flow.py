@@ -86,23 +86,24 @@ def submit(client, page, form, values=None):
     # Chromium treats localhost as a Secure Cookie exception. Emulate only that
     # loopback behavior in this HTTP client; application cookie settings stay intact.
     for cookie in client.cookies.jar:
-        if cookie.name in ("tripsync_session", "tripsync_invitation"):
+        if cookie.name in ("tripsync_session", "tripsync_invitation", "tripsync_email_verification"):
             cookie.secure = False
     return response
 
 
 def sign_in(client, email, *, next_value=None):
     page = get_page(client, "/login")
-    values = {"email": email, "password": PASSWORD}
+    values = {"identifier": email, "password": PASSWORD}
     if next_value is not None:
         values["next"] = next_value
-    response = submit(client, page, form_with(page, field="email"), values)
+    response = submit(client, page, form_with(page, field="identifier"), values)
     assert response.status_code == 303, response.status_code
     cookie = response.headers.get("set-cookie", "").lower()
     assert "httponly" in cookie and "samesite=lax" in cookie and "secure" in cookie
-    if next_value is not None:
-        assert response.headers["location"] == "/account", "External redirect must be ignored"
-    assert "我的帳號" in get_page(client, response.headers["location"]).text
+    destination = "/" + next_value if next_value in ("join", "verify-email") else "/account"
+    assert response.headers["location"] == destination, "Only known internal destinations are allowed"
+    heading = "驗證電子郵件" if next_value == "verify-email" else "旅程" if next_value == "join" else "我的帳號"
+    assert heading in get_page(client, destination).text
 
 
 def check_registration():
@@ -113,7 +114,6 @@ def check_registration():
         "confirm_password": PASSWORD,
     }
     invalid_cases = [
-        ({"email": ""}, "請輸入有效的電子郵件"),
         ({"email": "invalid-email"}, "請輸入有效的電子郵件"),
         ({"username": "ab"}, "請使用 3–50 個英文字母、數字或底線"),
         ({"username": "bad/name"}, "請使用 3–50 個英文字母、數字或底線"),
@@ -128,6 +128,10 @@ def check_registration():
         assert 'href="/register"' in get_page(client, "/login").text
         page = get_page(client, "/register")
         assert page.status_code == 200 and 'href="/login"' in page.text
+        email_enabled = "email" in form_with(page, field="confirm_password")["fields"]
+        if not email_enabled:
+            values.pop("email")
+            invalid_cases = [(changes, message) for changes, message in invalid_cases if "email" not in changes]
         for changes, message in invalid_cases:
             submitted = values | changes
             response = submit(client, page, form_with(page, field="confirm_password"), submitted)
@@ -135,25 +139,28 @@ def check_registration():
             assert message in response.text, changes
             assert PASSWORD not in response.text, "Password leaked into response HTML"
             form = form_with(response, field="confirm_password")
-            assert form["values"]["email"] == submitted["email"]
+            if email_enabled:
+                assert form["values"]["email"] == submitted["email"]
             assert form["values"]["username"] == submitted["username"]
             assert form["values"]["password"] == form["values"]["confirm_password"] == ""
 
-        for changes in ({"email": "traveler@example.com"}, {"username": "traveler"}):
+        for changes in ({"username": "traveler"},):
             response = submit(client, page, form_with(page, field="confirm_password"), values | changes)
             assert response.status_code == 200
-            assert "此電子郵件或使用者名稱已被使用" in response.text
+            assert "此使用者名稱已被使用" in response.text
             assert PASSWORD not in response.text
 
         # Retry from an error response and preserve the API's existing whitespace policy.
         submitted = values | {"email": " new_user@example.com ", "username": " new_user ", "password": f" {PASSWORD} ", "next": "https://untrusted.invalid/"}
+        if not email_enabled:
+            submitted.pop("email")
         created = submit(client, response, form_with(response, field="confirm_password"), submitted)
         assert created.status_code == 303, created.status_code
         assert created.headers["location"] == "/login?registered=1"
         assert "tripsync_session" not in client.cookies, "Registration should not sign in automatically"
         login_page = get_page(client, created.headers["location"])
         assert "帳號建立成功，請使用新帳號登入" in login_page.text
-        sign_in(client, values["email"], next_value="https://untrusted.invalid/")
+        sign_in(client, values["username"], next_value="https://untrusted.invalid/")
         assert get_page(client, "/register").url.path == "/account"
         print("PASS: registration links, field errors, duplicates, safe retries, success, and new-account login")
 
@@ -210,7 +217,7 @@ def check_collaboration(owner, other, trip_path):
     assert "httponly" in cookie and "secure" in cookie and "max-age=900" in cookie
     login = get_page(other, pending.headers["location"])
     assert token not in login.text and 'href="/register?next=join"' in login.text
-    logged_in = submit(other, login, form_with(login, field="email"), {"email": "other@example.com", "password": PASSWORD})
+    logged_in = submit(other, login, form_with(login, field="identifier"), {"identifier": "other@example.com", "password": PASSWORD})
     assert logged_in.status_code == 303 and logged_in.headers["location"] == "/join"
     confirm = get_page(other, "/join")
     joined = submit(other, confirm, form_with(confirm, field="token"))
@@ -255,7 +262,7 @@ def check_collaboration(owner, other, trip_path):
         created = submit(guest, page, form_with(page, field="confirm_password"), {"email": "invitee@example.com", "username": "invitee", "password": PASSWORD, "confirm_password": PASSWORD})
         assert created.status_code == 303 and created.headers["location"] == "/login?registered=1&next=join"
         page = get_page(guest, created.headers["location"])
-        login = submit(guest, page, form_with(page, field="email"), {"email": "invitee@example.com", "password": PASSWORD})
+        login = submit(guest, page, form_with(page, field="identifier"), {"identifier": "invitee", "password": PASSWORD})
         assert login.status_code == 303 and login.headers["location"] == "/join"
         page = get_page(guest, "/join")
         joined = submit(guest, page, form_with(page, field="token"))

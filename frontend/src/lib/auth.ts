@@ -10,7 +10,9 @@ export { API_BASE_URL } from "./backend-request";
 
 export type CurrentUser = {
   id: number;
-  email: string;
+  email: string | null;
+  email_verified_at: string | null;
+  pending_email: string | null;
   username: string;
   created_at: string;
 };

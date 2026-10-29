@@ -34,7 +34,7 @@ python scripts/migrate_neon.py
 
 提示 `Paste Neon DIRECT connection URL (hidden):` 時貼上 **Direct URL** 並按 Enter。輸入不會顯示在畫面上，網址只保留在該程序記憶體中。
 
-成功時會顯示 `Neon schema migration complete`。這會套用現有四個 migration，建立帳號、旅程、行程與帳務資料表；不會複製本機資料。輔助程式拒絕 localhost、沒有 TLS 的網址，以及 pooled URL，避免把這一步套用到錯誤的本機資料庫。
+成功時會顯示 `Neon schema migration complete`。這會套用現有五個 migration，建立帳號、旅程、行程與帳務資料表；不會複製本機資料。輔助程式拒絕 localhost、沒有 TLS 的網址，以及 pooled URL，避免把這一步套用到錯誤的本機資料庫。
 
 不要把 migration 放進 Vercel 的每次啟動或每次預覽建置。後續資料結構變更，先備份 Neon 測試資料，再手動執行這個指令。
 
@@ -58,6 +58,7 @@ python scripts/migrate_neon.py
 | `DATABASE_URL` | Neon **Pooled URL** |
 | `JWT_SECRET_KEY` | 新產生的隨機值，與本機分開、至少 32 字元 |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` |
+| `EMAIL_VERIFICATION_ENABLED` | `false`；熟人測試版先不開放寄信驗證，無需設定 SMTP |
 | `GOOGLE_MAPS_API_KEY` | 你現有的 Google Maps Demo Key，若先不測地圖可暫留空 |
 | `CORS_ALLOW_ORIGINS` | `[]`；目前網頁透過前端伺服器呼叫 API，不需要瀏覽器直連 |
 
@@ -100,6 +101,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | 現有 Maps Demo Key，若先不測地圖可留空 |
 | `NEXT_PUBLIC_GOOGLE_MAP_ID` | `DEMO_MAP_ID` |
 | `TRIPSYNC_DEV_LOGIN_ENABLED` | `false` |
+| `EMAIL_VERIFICATION_ENABLED` | `false`；隱藏信箱欄位與寄信入口，日後與後端一起啟用 |
 
 不用把 `DATABASE_URL`、`JWT_SECRET_KEY` 或本機開發者帳密填到前端。也不用設定 `NEXT_PUBLIC_API_BASE_URL`；所有 API 請求都由伺服器端處理。瀏覽器用的地圖金鑰會公開，這是 Maps JS 的使用方式；它與資料庫密碼及伺服器 JWT 金鑰不同。
 
@@ -116,7 +118,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 5. 若已設定 Maps Demo Key，實測地點搜尋、地圖與交通時間。Demo Key 用量有每日上限，僅供測試與原型使用。
 6. 在手機開啟同一個前端網址，確認表單、日期導覽與帳務可操作。
 
-之後才分享給第一批熟人。測試站仍沒有信箱驗證、忘記密碼和完整的帳號限流；先控制測試對象、保留資料備份，並在 Vercel 啟用適合的防濫用保護。這些是目前產品限制，不因部署而自動補齊。
+之後才分享給第一批熟人。信箱驗證已實作但預設停用，先以使用者名稱與密碼註冊／登入、連結邀請旅伴，不需要申請寄信服務或購買網域。保留程式與 migration，日後再依 [EMAIL_VERIFICATION.md](EMAIL_VERIFICATION.md) 開啟前後端開關及設定正式 SMTP。測試站仍沒有忘記密碼和完整的帳號／IP 限流；先告知測試者妥善保管帳密、控制測試對象並保留資料備份。這些是目前產品限制，不因部署而自動補齊。
 
 ## 8. 常見問題與更新
 

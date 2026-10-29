@@ -29,7 +29,9 @@ class DevelopmentAccountTests(unittest.TestCase):
         with Session(self.engine) as db:
             password, created = prepare_account(db, {})
             db.commit()
-            user = db.scalar(select(User).where(User.email == EMAIL))
+            user = db.scalar(select(User).where(User.username == USERNAME))
+            self.assertIsNone(user.email_verified_at)
+            self.assertEqual(user.pending_email, EMAIL)
             self.assertTrue(created)
             self.assertGreaterEqual(len(password), 32)
             self.assertNotEqual(password, user.password_hash)

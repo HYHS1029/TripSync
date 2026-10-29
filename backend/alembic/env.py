@@ -9,6 +9,7 @@ from alembic import context
 from app.database import Base, DATABASE_URL
 from app.core.database_config import normalize_database_url
 from app.models.user import User
+from app.models.auth_rate_limit import AuthRateLimit
 from app.models.trip import Trip, TripMember
 from app.models.invitation import TripInvitation
 from app.models.activity import Activity

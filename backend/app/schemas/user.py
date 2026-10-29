@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class UserCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    email: EmailStr
+    email: EmailStr | None = None
     username: str = Field(
         min_length=3,
         max_length=50,
@@ -26,6 +26,8 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    email: EmailStr
+    email: EmailStr | None
+    email_verified_at: datetime | None
+    pending_email: EmailStr | None
     username: str
     created_at: datetime

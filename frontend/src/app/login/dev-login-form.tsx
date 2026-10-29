@@ -3,12 +3,12 @@
 import { useActionState } from "react";
 import { developmentLogin } from "./actions";
 
-export default function DevelopmentLoginForm({ returnToJoin = false }: { returnToJoin?: boolean }) {
+export default function DevelopmentLoginForm({ next }: { next?: "join" | "verify-email" }) {
   const [state, action, pending] = useActionState(developmentLogin, {});
 
   return (
     <form action={action} className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-      {returnToJoin && <input type="hidden" name="next" value="join" />}
+      {next && <input type="hidden" name="next" value={next} />}
       <button
         type="submit"
         disabled={pending}

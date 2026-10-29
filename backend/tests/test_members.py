@@ -168,7 +168,7 @@ class MemberTests(TripTestCase):
             self.assertEqual(response.status_code, 422)
             self.assertNotIn(token, response.text)
             self.assertNotIn('"input"', response.text)
-        response = self.client.post("/auth/login", json={"email": "invalid", "password": "private-password"})
+        response = self.client.post("/auth/login", json={"email": "invalid@", "password": "private-password"})
         self.assertEqual(response.status_code, 422)
         self.assertNotIn("private-password", response.text)
 

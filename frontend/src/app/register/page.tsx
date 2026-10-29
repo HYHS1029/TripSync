@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isEmailVerificationEnabled } from "@/lib/auth-features";
 import RegisterForm from "./register-form";
 
 export const metadata: Metadata = { title: "註冊 | TripSync" };
@@ -34,7 +35,7 @@ export default async function RegisterPage({
               完成註冊與登入後，會回到旅程邀請。
             </p>
           )}
-          <RegisterForm returnToJoin={returnToJoin} />
+          <RegisterForm returnToJoin={returnToJoin} emailVerificationEnabled={isEmailVerificationEnabled()} />
           <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             已經有帳號？{" "}
             <Link

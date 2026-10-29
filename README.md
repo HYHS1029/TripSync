@@ -2,7 +2,7 @@
 
 多人旅行協作平台，集中管理旅程、旅伴、地圖行程與記帳分帳。目前完成帳號、旅程 CRUD、旅伴邀請／管理、每日活動，以及地圖串接與記帳分帳第一版；地圖需要另設定 Google 服務。
 
-本文件依據 2026-10-28 的程式碼與本機環境整理。
+本文件依據 2026-10-29 的程式碼與本機環境整理。
 
 ## 專案文件
 
@@ -10,6 +10,7 @@
 - [功能、架構、API 與後續開發順序](docs/PROJECT_OVERVIEW.md)
 - [每個檔案的用途與修改位置](docs/FILE_GUIDE.md)
 - [註冊／登入設計、API 與測試方法](docs/AUTHENTICATION.md)
+- [信箱驗證、使用者名稱登入與本機測試信箱](EMAIL_VERIFICATION.md)
 - [旅程管理架構、程式碼與測試](docs/TRIP_MANAGEMENT.md)
 - [旅伴協作、每日行程與資安設計](docs/COLLABORATION_AND_ITINERARY.md)
 - [核心功能開發順序與驗收條件](docs/ROADMAP.md)
@@ -29,10 +30,10 @@
 | 旅伴 | 七天單次邀請、撤銷、加入、成員列表、退出與移除 |
 | 每日行程 | 活動 CRUD、分類、住宿期間、上下排序、目的地時區、Google 地點搜尋／地圖／交通串接（需設定金鑰） |
 | 記帳與分帳 | 單一旅程幣別、付款人／負擔人、均分／自訂、活動關聯、結算建議、部分還款及撤銷、歷史成員 |
-| 資料庫 | PostgreSQL、原有五個資料表加上 Expense／ExpenseShare／Settlement、四個 Alembic migration |
+| 資料庫 | PostgreSQL、原有五個資料表加上 Expense／ExpenseShare／Settlement、五個 Alembic migration |
 | 開發環境 | 前後端各自啟動，Docker Compose 執行 PostgreSQL |
 
-地圖、地點搜尋、交通查詢及記帳分帳已可操作。本機 Maps Demo Key 已在全站 `no-referrer` 下通過真實地圖、景點搜尋、標記及交通路線驗證，未開啟計費或修改 Cloud 金鑰限制，詳見[第一版設定與狀態](docs/MAPS_AND_LEDGER.md)。Demo Key 供開發／原型測試；投票、正式金鑰與正式部署尚未完成。可從首頁點「註冊」建立帳號，登入後進入 `/trips`。開啟旅程可安排每日活動，從「旅伴與邀請」邀請朋友，從「記帳與分帳」管理開銷。目前尚無收信驗證。
+地圖、地點搜尋、交通查詢及記帳分帳已可操作。本機 Maps Demo Key 已在全站 `no-referrer` 下通過真實地圖、景點搜尋、標記及交通路線驗證，未開啟計費或修改 Cloud 金鑰限制，詳見[第一版設定與狀態](docs/MAPS_AND_LEDGER.md)。Demo Key 供開發／原型測試；投票、正式金鑰與正式部署尚未完成。可從首頁點「註冊」建立帳號，登入後進入 `/trips`。開啟旅程可安排每日活動，從「旅伴與邀請」邀請朋友，從「記帳與分帳」管理開銷。熟人測試版使用使用者名稱登入；信箱驗證已實作但預設停用，暫不收集 Email 或顯示寄信入口。保留功能與手動啟用方式見 [EMAIL_VERIFICATION.md](EMAIL_VERIFICATION.md)。
 
 ## 本機啟動
 
@@ -166,8 +167,8 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 ## 驗證
 
-在 `backend/` 執行 `python -m unittest discover -s tests -v`，103 項測試使用隔離記憶體資料庫與設定檢查。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
+在 `backend/` 執行 `python -m unittest discover -s tests -v`，121 項測試使用隔離記憶體資料庫與設定檢查。在 `frontend/` 執行 `npm run lint`、`npx tsc --noEmit --incremental false`、`npm test` 與 `npm run build -- --webpack`（本機 Turbopack CSS 子程序啟動失敗，Webpack 已驗證）。HTTP 表單整合測試與隔離的 PostgreSQL 競態檢查見[地圖與帳務驗證](docs/MAPS_AND_LEDGER.md#6-驗證與預覽)。
 
 ## 後續開發起點
 
-地圖與帳務第一版已完成，並已用 Maps Demo Key 驗證真實地圖與交通路線。接著依使用回饋安排進階行程、多幣別或投票，詳見[開發順序](docs/ROADMAP.md)。公開產品化前須更換正式金鑰、驗證來源限制，並完成信箱驗證、找回密碼、完整限流、HTTPS 部署與安全驗收；已實作防護與待辦見[資安說明](docs/COLLABORATION_AND_ITINERARY.md#9-已加入的防護與產品化前待辦)。
+地圖與帳務第一版已完成，並已用 Maps Demo Key 驗證真實地圖與交通路線。接著依使用回饋安排進階行程、多幣別或投票，詳見[開發順序](docs/ROADMAP.md)。公開產品化前須更換正式金鑰、驗證來源限制，並完成正式寄信設定、找回密碼、完整限流、HTTPS 部署與安全驗收；已實作防護與待辦見[資安說明](docs/COLLABORATION_AND_ITINERARY.md#9-已加入的防護與產品化前待辦)。

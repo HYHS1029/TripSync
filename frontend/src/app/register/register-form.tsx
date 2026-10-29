@@ -16,13 +16,6 @@ type Field = {
 
 const fields: Field[] = [
   {
-    name: "email",
-    label: "電子郵件",
-    type: "email",
-    autoComplete: "email",
-    maxLength: 254,
-  },
-  {
     name: "username",
     label: "使用者名稱",
     type: "text",
@@ -30,7 +23,7 @@ const fields: Field[] = [
     minLength: 3,
     maxLength: 50,
     pattern: "[A-Za-z0-9_]+",
-    hint: "3–50 個英文字母、數字或底線。",
+    hint: "3–50 個英文字母、數字或底線，登入時區分大小寫。",
   },
   {
     name: "password",
@@ -49,14 +42,24 @@ const fields: Field[] = [
     minLength: 8,
     maxLength: 128,
   },
+  {
+    name: "email",
+    label: "電子郵件（選填）",
+    type: "email",
+    autoComplete: "email",
+    maxLength: 254,
+    hint: "登入後可寄送驗證信；完成驗證後才能用信箱登入。",
+  },
 ];
 
 const initialState: RegisterState = { values: { email: "", username: "" } };
 
 export default function RegisterForm({
   returnToJoin = false,
+  emailVerificationEnabled = false,
 }: {
   returnToJoin?: boolean;
+  emailVerificationEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(register, initialState);
 
@@ -64,6 +67,7 @@ export default function RegisterForm({
     <form action={formAction} className="space-y-5">
       {returnToJoin && <input type="hidden" name="next" value="join" />}
       {fields.map((field) => {
+        if (field.name === "email" && !emailVerificationEnabled) return null;
         const error = state.fieldErrors?.[field.name];
         return (
           <div key={field.name}>
@@ -78,7 +82,7 @@ export default function RegisterForm({
               name={field.name}
               type={field.type}
               autoComplete={field.autoComplete}
-              required
+              required={field.name !== "email"}
               minLength={field.minLength}
               maxLength={field.maxLength}
               pattern={field.pattern}
@@ -116,6 +120,11 @@ export default function RegisterForm({
           </div>
         );
       })}
+      <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        {emailVerificationEnabled
+          ? "建議登入後綁定並驗證信箱。未設定恢復方式時，忘記密碼可能無法找回帳號。"
+          : "請記住使用者名稱並妥善保管密碼，目前尚未提供忘記密碼功能。"}
+      </p>
       <div aria-live="polite" aria-atomic="true">
         {state.error && (
           <p
